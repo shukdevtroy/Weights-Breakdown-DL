@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The weights break-down — an interactive neural network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B0F14;
+    --panel:#121924;
+    --panel-2:#171f2c;
+    --line:#25303f;
+    --line-soft:#1b2431;
+    --text:#EDEFF2;
+    --text-dim:#8B93A1;
+    --text-faint:#5b6472;
+    --wire:#3a4453;
+    --blue:#5BA3F5;
+    --blue-dim:#2c4a70;
+    --amber:#F2A93B;
+    --teal:#2DD4A7;
+    --coral:#FF6B5B;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--blue-dim);color:#fff;}
+  a{color:var(--blue);}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:4px;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- Hero ---------- */
+  header.hero{
+    padding:96px 0 64px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .hero-grid{
+    position:absolute; inset:0; opacity:.35; pointer-events:none;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 90%);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--amber);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin:0 0 18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 4px rgba(242,169,59,.15);}
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(38px,6vw,64px);
+    line-height:1.05;
+    margin:0 0 20px;
+    max-width:820px;
+  }
+  h1 em{
+    font-style:normal;
+    color:var(--blue);
+  }
+  .hero p.lede{
+    font-size:18px;
+    color:var(--text-dim);
+    max-width:600px;
+    margin:0 0 36px;
+  }
+  .hero-formula{
+    display:inline-flex; align-items:center; gap:14px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px 22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:26px;
+  }
+  .hero-formula .out{color:var(--amber);font-weight:700;}
+  .hero-formula sup{color:var(--teal);}
+  .hero-formula sub{color:var(--coral);}
+  .hero-formula .arrow{color:var(--text-faint);}
+
+  section{padding:72px 0;border-bottom:1px solid var(--line-soft);}
+  section:last-of-type{border-bottom:none;}
+  .section-head{max-width:640px;margin:0 0 40px;}
+  .section-head .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;
+  }
+  h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(24px,3.4vw,34px);
+    font-weight:500;
+    margin:0 0 12px;
+  }
+  .section-head p{color:var(--text-dim);margin:0;font-size:16px;}
+
+  /* ---------- Notation cards ---------- */
+  .notation{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+  }
+  .notation .formula-big{
+    grid-column:1/-1;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(48px,9vw,84px);
+    font-weight:700;
+    margin:0 0 28px;
+    color:var(--text-faint);
+    user-select:none;
+  }
+  .notation .formula-big sup{
+    font-size:0.42em;
+    vertical-align:super;
+  }
+  .notation .formula-big sub{
+    font-size:0.42em;
+    vertical-align:sub;
+    margin-left:-0.55em;
+  }
+  .notation .formula-big .fz{color:var(--text-faint);}
+  .notation .formula-big .fx{color:var(--text-faint);}
+  .notation .formula-big .fy{color:var(--text-faint);}
+  .notation .formula-big.hz .fz,
+  .notation .formula-big.hx .fx,
+  .notation .formula-big.hy .fy{color:var(--amber);text-shadow:0 0 24px rgba(242,169,59,.4);}
+
+  .ncard{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    cursor:default;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .ncard:hover, .ncard:focus-within{border-color:var(--amber);background:var(--panel-2);}
+  .ncard .letter{
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px; font-weight:700; color:var(--amber);
+    margin:0 0 8px;
+  }
+  .ncard h3{margin:0 0 6px;font-size:15px;font-weight:600;font-family:'Inter',sans-serif;}
+  .ncard p{margin:0;font-size:14px;color:var(--text-dim);}
+
+  /* ---------- Simulation ---------- */
+  .sim-layout{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:20px;
+  }
+  .sliders{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .slider-row label{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim);
+    margin-bottom:8px;
+  }
+  .slider-row label b{color:var(--text);font-weight:600;}
+  input[type=range]{
+    width:100%; height:4px; -webkit-appearance:none; appearance:none;
+    background:var(--wire); border-radius:2px; outline-offset:6px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:var(--blue); cursor:pointer; border:2px solid #0B0F14;
+    box-shadow:0 0 0 2px var(--blue);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%; background:var(--blue);
+    cursor:pointer; border:2px solid #0B0F14;
+  }
+
+  .sim-board{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px;
+  }
+  .board-toolbar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 10px 14px;
+    flex-wrap:wrap; gap:10px;
+  }
+  .board-toolbar .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:14px;height:2px;display:inline-block;}
+  .toggle-btn{
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    background:var(--panel-2); color:var(--text-dim);
+    border:1px solid var(--line); border-radius:6px;
+    padding:6px 12px; cursor:pointer;
+  }
+  .toggle-btn.active{color:var(--amber);border-color:var(--amber);}
+
+  svg#net{width:100%; height:auto; display:block;}
+  .neuron-label{font-family:'Inter',sans-serif;font-size:15px;fill:var(--text-faint);}
+  .layer-tag{font-family:'JetBrains Mono',monospace;font-size:12px;fill:#49d610;}
+  .val-text{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--text);pointer-events:none;}
+  .wlabel-text{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;fill:var(--text);pointer-events:none;}
+  .wlabel-bg{fill:var(--panel-2);stroke:var(--wire);stroke-width:1;}
+  .wlabel-group.active .wlabel-bg{stroke:var(--amber);}
+
+  .detail-panel{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    color:var(--text-dim);
+    min-height:26px;
+  }
+  .detail-panel .headline{color:var(--text);font-size:16px;display:block;margin-bottom:6px;}
+  .detail-panel .term{color:var(--teal);}
+  .detail-panel .term.neg{color:var(--coral);}
+
+  /* ---------- Weight popup ---------- */
+  .weight-popup{
+    position:fixed; z-index:1000;
+    background:var(--panel-2);
+    border:1px solid var(--amber);
+    border-radius:10px;
+    padding:14px 18px 14px 16px;
+    max-width:260px;
+    box-shadow:0 12px 32px rgba(0,0,0,.55);
+    opacity:0; transform:translateY(6px) scale(.98);
+    transition:opacity .14s ease, transform .14s ease;
+    pointer-events:none;
+  }
+  .weight-popup.show{opacity:1; transform:translateY(0) scale(1); pointer-events:auto;}
+  .weight-popup .wp-close{
+    position:absolute; top:6px; right:8px;
+    background:none; border:none; color:var(--text-faint);
+    font-size:15px; line-height:1; cursor:pointer; padding:2px 4px;
+  }
+  .weight-popup .wp-close:hover{color:var(--text);}
+  .weight-popup .wp-title{
+    font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700;
+    color:var(--amber); margin:0 0 8px; padding-right:14px;
+  }
+  .weight-popup .wp-desc{
+    font-family:'Inter',sans-serif; font-size:13px; color:var(--text-dim);
+    margin:0; line-height:1.45;
+  }
+
+  /* ---------- Quiz ---------- */
+  .quiz-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 28px;
+    max-width:640px;
+  }
+  .quiz-q{
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px; font-weight:700; color:var(--amber);
+    margin:0 0 6px;
+  }
+  .quiz-sub{color:var(--text-dim);font-size:14px;margin:0 0 20px;}
+  .quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .quiz-opt{
+    text-align:left;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; font-family:'Inter',sans-serif; font-size:14px; color:var(--text);
+    cursor:pointer;
+  }
+  .quiz-opt:hover{border-color:var(--blue);}
+  .quiz-opt.correct{border-color:var(--teal);background:rgba(45,212,167,.08);}
+  .quiz-opt.wrong{border-color:var(--coral);background:rgba(255,107,91,.08);}
+  .quiz-feedback{margin-top:16px;font-size:14px;min-height:20px;}
+  .quiz-feedback.ok{color:var(--teal);}
+  .quiz-feedback.bad{color:var(--coral);}
+  .quiz-next{
+    margin-top:14px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    background:none;border:1px solid var(--line);color:var(--text-dim);
+    border-radius:6px;padding:8px 14px;cursor:pointer;
+  }
+
+  footer{padding:40px 0 60px;text-align:center;color:var(--text-faint);font-size:13px;}
+
+  @media (max-width:720px){
+    .notation{grid-template-columns:1fr;}
+    .sliders{grid-template-columns:1fr;}
+    .quiz-options{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="wrap">
+    <p class="eyebrow">Live neural network</p>
+    <h1>The weights break-down, <em>made interactive</em></h1>
+    <p class="lede">Every connection in a neural network is a number called a weight. Drag the inputs below and watch those numbers decide, in real time, what the network thinks.</p>
+    <div class="hero-formula">
+      <span>W<sup>z</sup><sub>xy</sub></span>
+      <span class="arrow">→</span>
+      <span class="out" id="hero-g">ŷ = 0.00</span>
+    </div>
+  </div>
+</header>
+
+<section id="notation">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="tag">01 — reading the notation</p>
+      <h2>Every weight has an address</h2>
+      <p>Hover each part below to see what it changes in the formula.</p>
+    </div>
+    <div class="notation">
+      <p class="formula-big" id="big-formula">W<sup><span class="fz">2</span></sup><sub><span class="fx">1</span><span class="fy">3</span></sub></p>
+      <div class="ncard" tabindex="0" onmouseenter="hi('z')" onmouseleave="hi(null)" onfocus="hi('z')" onblur="hi(null)">
+        <p class="letter">z</p>
+        <h3>current layer</h3>
+        <p>Which layer this weight feeds into. z = 2 means it's on the wires arriving at layer 2.</p>
+      </div>
+      <div class="ncard" tabindex="0" onmouseenter="hi('x')" onmouseleave="hi(null)" onfocus="hi('x')" onblur="hi(null)">
+        <p class="letter">x</p>
+        <h3>neuron in the current layer</h3>
+        <p>Which neuron receives this wire. x = 1 means it lands on neuron 1 of layer z.</p>
+      </div>
+      <div class="ncard" tabindex="0" onmouseenter="hi('y')" onmouseleave="hi(null)" onfocus="hi('y')" onblur="hi(null)">
+        <p class="letter">y</p>
+        <h3>neuron in the previous layer</h3>
+        <p>Which neuron this wire comes from. y = 3 means it starts at neuron 3 of the layer before.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sim">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="tag">02 — the simulation</p>
+      <h2>Run a forward pass yourself</h2>
+      <p>Adjust x₁, x₂, x₃. Click any neuron to see how its value was computed, or click any connecting line (or its label) to pop up that weight's address and value — same pattern as the W²₁₃ example on the original slide.</p>
+    </div>
+
+    <div class="sim-layout">
+      <div class="sliders">
+        <div class="slider-row">
+          <label for="s0"><b>x₁</b><span id="s0v">0.70</span></label>
+          <input type="range" id="s0" min="0" max="1" step="0.01" value="0.7">
+        </div>
+        <div class="slider-row">
+          <label for="s1"><b>x₂</b><span id="s1v">0.30</span></label>
+          <input type="range" id="s1" min="0" max="1" step="0.01" value="0.3">
+        </div>
+        <div class="slider-row">
+          <label for="s2"><b>x₃</b><span id="s2v">0.90</span></label>
+          <input type="range" id="s2" min="0" max="1" step="0.01" value="0.9">
+        </div>
+      </div>
+
+      <div class="detail-panel" id="detail">
+        <span class="headline">Click any neuron</span>
+        to see its weighted-sum formula, or click a connecting line to pop up one weight's address and value.
+      </div>
+
+      <div class="sim-board">
+        <div class="board-toolbar">
+          <div class="legend">
+            <span><i style="background:#2DD4A7"></i>positive weight</span>
+            <span><i style="background:#FF6B5B"></i>negative weight</span>
+            <span>thickness = strength · glow = activation</span>
+          </div>
+          <button class="toggle-btn" id="labelToggle" onclick="toggleLabels()">show all weight labels</button>
+        </div>
+        <svg id="net" viewBox="0 0 900 560" role="img" aria-label="Interactive diagram of a neural network with 3 input neurons, 3 layer-1 neurons, 4 layer-2 neurons and 1 output neuron">
+          <g id="lines"></g>
+          <g id="wlabels"></g>
+          <g id="nodes"></g>
+          <text class="layer-tag" x="70" y="34" text-anchor="middle">input · n=3</text>
+          <text class="layer-tag" x="300" y="34" text-anchor="middle">layer 1 · n=3</text>
+          <text class="layer-tag" x="530" y="34" text-anchor="middle">layer 2 · n=4</text>
+          <text class="layer-tag" x="760" y="34" text-anchor="middle">layer 3 · n=1</text>
+        </svg>
+      </div>
+
+      
+    </div>
+  </div>
+</section>
+
+<section id="quiz">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="tag">03 — check yourself</p>
+      <h2>Can you read the address?</h2>
+      <p>A quick sanity check on the notation from section 01.</p>
+    </div>
+    <div class="quiz-card">
+      <p class="quiz-q" id="quiz-formula">W²₁₃</p>
+      <p class="quiz-sub">What does this weight represent?</p>
+      <div class="quiz-options" id="quiz-options"></div>
+      <p class="quiz-feedback" id="quiz-feedback"></p>
+      <button class="quiz-next" id="quiz-next" onclick="newQuestion()" style="display:none">Next question →</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Built to accompany "The weights break-down" — drag, click, and learn how a dense layer actually computes.
+</footer>
+
+<div class="weight-popup" id="weightPopup">
+  <button class="wp-close" aria-label="Close" onclick="hidePopup()">&times;</button>
+  <p class="wp-title" id="wpTitle"></p>
+  <p class="wp-desc" id="wpDesc"></p>
+</div>
+
+<script>
+/* ---------------- notation highlight ---------------- */
+function hi(part){
+  const f = document.getElementById('big-formula');
+  f.className = 'formula-big' + (part ? ' h'+part : '');
+}
+
+/* ---------------- network setup ---------------- */
+const inX=70, l1X=300, l2X=530, l3X=760;
+const inY=[150,290,430], l1Y=[150,290,430], l2Y=[100,240,380,520-60], l3Y=[280];
+
+// Weights are deliberately strong and asymmetric (rather than the tiny
+// original values) so that dragging any single slider produces a clearly
+// visible swing in every downstream neuron and in the final output —
+// with small weights the sigmoid stages barely move the needle.
+const W1=[[4,-2,-2],[-2,4,-2],[-2,-2,4]];
+const W2=[[4,-2,-2],[-2,4,-2],[-2,-2,4],[3,0,-3]];
+const W3=[2,-2,2,-2];
+
+const sig = z => 1/(1+Math.exp(-z));
+const NS='http://www.w3.org/2000/svg';
+const linesG=document.getElementById('lines'), nodesG=document.getElementById('nodes'), wlabelsG=document.getElementById('wlabels');
+let showLabels=false;
+
+function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);return e;}
+
+function connLine(id,x1,y1,x2,y2,w,z,x,y,t,perp){
+  const l=el('line',{id,x1,y1,x2,y2,stroke:w>=0?'#2DD4A7':'#FF6B5B','stroke-width':0.6+Math.abs(w)*0.6,'stroke-linecap':'round',style:'cursor:pointer'});
+  l.addEventListener('click',(e)=>showWeight(e,z,x,y,w));
+  linesG.appendChild(l);
+
+  // Position the label at a point along the line (t) AND offset it
+  // perpendicular to the line (perp) so labels from lines that share a
+  // source or a target fan out in two dimensions instead of stacking.
+  const tt = (typeof t === 'number') ? t : 0.5;
+  const pp = (typeof perp === 'number') ? perp : 0;
+  let mx=x1+(x2-x1)*tt, my=y1+(y2-y1)*tt;
+  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+  const nx=-dy/len, ny=dx/len;
+  mx += nx*pp; my += ny*pp;
+
+  const g=el('g',{id:'wl-'+id, class:'wlabel-group', opacity:0, style:'cursor:pointer'});
+  const bg=el('rect',{class:'wlabel-bg', x:mx-19, y:my-9, width:38, height:17, rx:4});
+  const txt=el('text',{class:'wlabel-text', x:mx, y:my+4, 'text-anchor':'middle'});
+  txt.innerHTML = 'W<tspan baseline-shift="super" font-size="8">'+z+'</tspan><tspan baseline-shift="sub" font-size="8">'+x+y+'</tspan>';
+  g.appendChild(bg);
+  g.appendChild(txt);
+  g.addEventListener('click',(e)=>showWeight(e,z,x,y,w));
+  wlabelsG.appendChild(g);
+  return l;
+}
+
+function neuron(id,x,y,label){
+  const g=el('g',{id:'g-'+id,style:'cursor:pointer'});
+  g.addEventListener('click',()=>showNeuron(id));
+  const glow=el('circle',{id:'glow-'+id,cx:x,cy:y,r:30,fill:'#5BA3F5',opacity:0.0,filter:'blur(6px)'});
+  const base=el('circle',{cx:x,cy:y,r:22,fill:'#121924',stroke:'#3a4453','stroke-width':1});
+  const fill=el('circle',{id:'fill-'+id,cx:x,cy:y,r:22,fill:'#5BA3F5','fill-opacity':0.2});
+  const v=el('text',{id:'val-'+id,class:'val-text',x,y:y+4,'text-anchor':'middle'});
+  const t=el('text',{class:'neuron-label',x,y:y+40,'text-anchor':'middle'});
+  t.textContent=label;
+  g.appendChild(glow);g.appendChild(base);g.appendChild(fill);g.appendChild(v);g.appendChild(t);
+  nodesG.appendChild(g);
+}
+
+for (let k = 0; k < 3; k++) {
+    neuron('x' + k, inX, inY[k], 'x' + String.fromCharCode(0x2081 + k));
+}
+for (let j = 0; j < 3; j++) {
+    neuron('a1_' + j, l1X, l1Y[j], 'a¹' + String.fromCharCode(0x2081 + j));
+}
+for (let i = 0; i < 4; i++) { neuron('a2_' + i, l2X, l2Y[i], 'a²' + String.fromCharCode(0x2081 + i)); }
+neuron('g', l3X, l3Y[0], 'output ŷ');
+
+// Layer 1: stagger t by source (k) so labels move along the line per source,
+// and offset perpendicular by target (j) so labels sharing a source but
+// heading to different targets don't sit on top of each other.
+for(let j=0;j<3;j++) for(let k=0;k<3;k++) connLine('l1-'+j+'-'+k, inX+22, inY[k], l1X-22, l1Y[j], W1[j][k], 1, j+1, k+1, 0.32+k*0.14, (j-1)*14);
+// Layer 2: stagger t by source (j), offset perpendicular by target (i).
+for(let i=0;i<4;i++) for(let j=0;j<3;j++) connLine('l2-'+i+'-'+j, l1X+22, l1Y[j], l2X-22, l2Y[i], W2[i][j], 2, i+1, j+1, 0.32+j*0.14, (i-1.5)*14);
+// Layer 3: stagger t and offset perpendicular by source (i), 4 distinct positions.
+for(let i=0;i<4;i++) connLine('l3-'+i, l2X+22, l2Y[i], l3X-22, l3Y[0], W3[i], 3, 1, i+1, 0.25+i*0.15, (i-1.5)*10);
+
+let state={x:[0,0,0],a1:[0,0,0],a2:[0,0,0,0],g:0};
+
+function update(){
+  const x=[0,1,2].map(i=>parseFloat(document.getElementById('s'+i).value));
+  [0,1,2].forEach(i=>document.getElementById('s'+i+'v').textContent=x[i].toFixed(2));
+  const a1=W1.map(row=>sig(row[0]*x[0]+row[1]*x[1]+row[2]*x[2]));
+  const a2=W2.map(row=>sig(row[0]*a1[0]+row[1]*a1[1]+row[2]*a1[2]));
+  const g=sig(W3[0]*a2[0]+W3[1]*a2[1]+W3[2]*a2[2]+W3[3]*a2[3]);
+  state={x,a1,a2,g};
+
+  x.forEach((v,i)=>{document.getElementById('fill-x'+i).setAttribute('fill-opacity',0.15+v*0.7);document.getElementById('glow-x'+i).setAttribute('opacity',v*0.5);document.getElementById('val-x'+i).textContent=v.toFixed(2);});
+  a1.forEach((v,i)=>{document.getElementById('fill-a1_'+i).setAttribute('fill-opacity',0.15+v*0.7);document.getElementById('glow-a1_'+i).setAttribute('opacity',v*0.5);document.getElementById('val-a1_'+i).textContent=v.toFixed(2);});
+  a2.forEach((v,i)=>{document.getElementById('fill-a2_'+i).setAttribute('fill-opacity',0.15+v*0.7);document.getElementById('glow-a2_'+i).setAttribute('opacity',v*0.5);document.getElementById('val-a2_'+i).textContent=v.toFixed(2);});
+  document.getElementById('fill-g').setAttribute('fill-opacity',0.15+g*0.7);
+  document.getElementById('glow-g').setAttribute('opacity',g*0.5);
+  document.getElementById('val-g').textContent=g.toFixed(2);
+  document.getElementById('hero-g').textContent='ŷ = '+g.toFixed(3);
+
+  for(let j=0;j<3;j++) for(let k=0;k<3;k++) document.getElementById('l1-'+j+'-'+k).setAttribute('opacity',0.25+x[k]*0.65);
+  for(let i=0;i<4;i++) for(let j=0;j<3;j++) document.getElementById('l2-'+i+'-'+j).setAttribute('opacity',0.25+a1[j]*0.65);
+  for(let i=0;i<4;i++) document.getElementById('l3-'+i).setAttribute('opacity',0.25+a2[i]*0.65);
+}
+['s0','s1','s2'].forEach(id=>{
+  const input = document.getElementById(id);
+  input.addEventListener('input', update);
+  input.addEventListener('change', update);
+});
+
+function toggleLabels(){
+  showLabels=!showLabels;
+  document.getElementById('labelToggle').classList.toggle('active',showLabels);
+  document.getElementById('labelToggle').textContent = showLabels ? 'hide all weight labels' : 'show all weight labels';
+  document.querySelectorAll('.wlabel-group').forEach(g=>g.setAttribute('opacity',showLabels?1:0));
+}
+
+function fmt(w){return (w>=0?'+':'')+w.toFixed(2);}
+function termSpan(w,label){return '<span class="term'+(w<0?' neg':'')+'">'+fmt(w)+' × '+label+'</span>';}
+
+function showNeuron(id){
+  const d=document.getElementById('detail');
+  if(id.startsWith('x')){
+    const i=+id.slice(1);
+    d.innerHTML='<span class="headline">x'+(i+1)+' = '+state.x[i].toFixed(2)+'</span>A slider-controlled input feature — no weights yet, this is the raw data.';
+  } else if(id.startsWith('a1_')){
+    const j=+id.split('_')[1];
+    const terms=[0,1,2].map(k=>termSpan(W1[j][k],'x'+(k+1))).join(' + ');
+    d.innerHTML =
+    '<span class="headline">' +
+    'a<sup><span class="fz">1</span></sup><sub><span class="fx">' + (j + 1) + '</span></sub>' +
+    ' = sigmoid( ' + terms + ' ) = ' + state.a1[j].toFixed(3) +
+    '</span>weights used: ' +
+    'W<sup><span class="fz">1</span></sup><sub><span class="fx">' + (j + 1) + '</span><span class="fy">1</span></sub>, ' +
+    'W<sup><span class="fz">1</span></sup><sub><span class="fx">' + (j + 1) + '</span><span class="fy">2</span></sub>, ' +
+    'W<sup><span class="fz">1</span></sup><sub><span class="fx">' + (j + 1) + '</span><span class="fy">3</span></sub>';
+  } else if(id.startsWith('a2_')){
+    const i=+id.split('_')[1];
+    const terms=[0,1,2].map(j=>termSpan(W2[i][j],'a¹'+(j+1))).join(' + ');
+    d.innerHTML =
+    '<span class="headline">' +
+    'a<sup><span class="fz">2</span></sup><sub><span class="fx">' + (i + 1) + '</span></sub>' +
+    ' = sigmoid( ' + terms + ' ) = ' + state.a2[i].toFixed(3) +
+    '</span>weights used: ' +
+    'W<sup><span class="fz">2</span></sup><sub><span class="fx">' + (i + 1) + '</span><span class="fy">1</span></sub>, ' +
+    'W<sup><span class="fz">2</span></sup><sub><span class="fx">' + (i + 1) + '</span><span class="fy">2</span></sub>, ' +
+    'W<sup><span class="fz">2</span></sup><sub><span class="fx">' + (i + 1) + '</span><span class="fy">3</span></sub>';
+  } else if(id==='g'){
+    const terms=[0,1,2,3].map(i=>termSpan(W3[i],'a²'+(i+1))).join(' + ');
+    d.innerHTML='<span class="headline">ŷ = sigmoid( '+terms+' ) = '+state.g.toFixed(3)+'</span>this is the final prediction of the network.';
+  }
+}
+
+/* ---------------- weight popup ---------------- */
+const popupEl=document.getElementById('weightPopup');
+function showWeight(e,z,x,y,w){
+  const d=document.getElementById('detail');
+  const fromLabel = z===1 ? 'input x'+y : 'neuron '+y+' of layer '+(z-1);
+  d.innerHTML =
+    '<span class="headline">' +
+    'W<sup><span class="fz">' + z + '</span></sup>' +
+    '<sub><span class="fx">' + x + '</span><span class="fy">' + y + '</span></sub>' +
+    ' = ' + w.toFixed(2) +
+    '</span>Connection from ' + fromLabel +
+    ' to neuron ' + x +
+    ' of layer ' + z + '.';
+
+  document.getElementById('wpTitle').innerHTML =
+    'W<sup><span class="fz">' + z + '</span></sup>' +
+    '<sub><span class="fx">' + x + '</span><span class="fy">' + y + '</span></sub>' +
+    ' = ' + w.toFixed(2);
+  document.getElementById('wpDesc').textContent = 'Connection from '+fromLabel+' to neuron '+x+' of layer '+z+'. '+(w>=0?'A positive weight — it pushes the receiving neuron up.':'A negative weight — it pulls the receiving neuron down.');
+
+  popupEl.style.left='-9999px'; popupEl.style.top='-9999px'; popupEl.classList.add('show');
+  const rect=popupEl.getBoundingClientRect();
+  let left = e.clientX + 16;
+  let top = e.clientY - rect.height/2;
+  if(left + rect.width > window.innerWidth - 12) left = e.clientX - rect.width - 16;
+  if(left < 12) left = 12;
+  if(top < 12) top = 12;
+  if(top + rect.height > window.innerHeight - 12) top = window.innerHeight - rect.height - 12;
+  popupEl.style.left = left+'px';
+  popupEl.style.top = top+'px';
+
+  if(e && e.stopPropagation) e.stopPropagation();
+}
+function hidePopup(){ popupEl.classList.remove('show'); }
+document.addEventListener('click',(e)=>{
+  if(!popupEl.contains(e.target)) hidePopup();
+});
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hidePopup(); });
+
+update();
+
+/* ---------------- quiz ---------------- */
+const quizPool=[
+  {z:2,x:1,y:3,text:'the connection from neuron 3 of layer 1 to neuron 1 of layer 2'},
+  {z:1,x:2,y:1,text:'the connection from input x₁ to neuron 2 of layer 1'},
+  {z:3,x:1,y:4,text:'the connection from neuron 4 of layer 2 to the single neuron of layer 3'},
+  {z:2,x:3,y:2,text:'the connection from neuron 2 of layer 1 to neuron 3 of layer 2'},
+  {z:1,x:3,y:3,text:'the connection from input x₃ to neuron 3 of layer 1'},
+];
+let quizIdx=0, answered=false;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function newQuestion(){
+  answered=false;
+  quizIdx=Math.floor(Math.random()*quizPool.length);
+  const q=quizPool[quizIdx];
+  document.getElementById('quiz-formula').innerHTML =
+    'W<sup><span class="fz">' + q.z + '</span></sup>' +
+    '<sub><span class="fx">' + q.x + '</span><span class="fy">' + q.y + '</span></sub>';
+  document.getElementById('quiz-feedback').textContent='';
+  document.getElementById('quiz-feedback').className='quiz-feedback';
+  document.getElementById('quiz-next').style.display='none';
+
+  const wrongs=shuffle(quizPool.filter((_,i)=>i!==quizIdx)).slice(0,3).map(o=>o.text);
+  const options=shuffle([q.text,...wrongs]);
+  const box=document.getElementById('quiz-options');
+  box.innerHTML='';
+  options.forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='quiz-opt';
+    b.textContent=opt.charAt(0).toUpperCase()+opt.slice(1);
+    b.onclick=()=>checkAnswer(b,opt,q.text);
+    box.appendChild(b);
+  });
+}
+function checkAnswer(btn,opt,correct){
+  if(answered) return;
+  answered=true;
+  const fb=document.getElementById('quiz-feedback');
+  document.querySelectorAll('.quiz-opt').forEach(o=>{
+    if(o.textContent.toLowerCase()===correct) o.classList.add('correct');
+  });
+  if(opt===correct){
+    btn.classList.add('correct');
+    fb.textContent='Correct — that is exactly what the address means.';
+    fb.className='quiz-feedback ok';
+  } else {
+    btn.classList.add('wrong');
+    fb.textContent='Not quite — the highlighted option is the right reading.';
+    fb.className='quiz-feedback bad';
+  }
+  document.getElementById('quiz-next').style.display='inline-block';
+}
+newQuestion();
+</script>
+</body>
+</html>
