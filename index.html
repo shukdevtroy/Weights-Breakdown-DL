@@ -324,7 +324,7 @@
   <div class="wrap">
     <p class="eyebrow">Live neural network</p>
     <h1>The weights break-down, <em>made interactive</em></h1>
-    <p class="lede">Every connection in a neural network is a number called a weight. Drag the inputs below and watch those numbers decide, in real time, what the network thinks.</p>
+    <p class="lede">Every connection/edge in a neural network is a number called a weight. Drag the inputs below and watch those numbers decide, in real time, what the network thinks.</p>
     <div class="hero-formula">
       <span>W<sup>z</sup><sub>xy</sub></span>
       <span class="arrow">→</span>
@@ -345,17 +345,17 @@
       <div class="ncard" tabindex="0" onmouseenter="hi('z')" onmouseleave="hi(null)" onfocus="hi('z')" onblur="hi(null)">
         <p class="letter">z</p>
         <h3>current layer</h3>
-        <p>Which layer this weight feeds into. z = 2 means it's on the wires arriving at layer 2.</p>
+        <p>Which layer this weight feeds into. z = 2 means it's on the edges arriving at layer 2.</p>
       </div>
       <div class="ncard" tabindex="0" onmouseenter="hi('x')" onmouseleave="hi(null)" onfocus="hi('x')" onblur="hi(null)">
         <p class="letter">x</p>
         <h3>neuron in the current layer</h3>
-        <p>Which neuron receives this wire. x = 1 means it lands on neuron 1 of layer z.</p>
+        <p>Which neuron receives this edge. x = 1 means it lands on neuron 1 of layer z.</p>
       </div>
       <div class="ncard" tabindex="0" onmouseenter="hi('y')" onmouseleave="hi(null)" onfocus="hi('y')" onblur="hi(null)">
         <p class="letter">y</p>
         <h3>neuron in the previous layer</h3>
-        <p>Which neuron this wire comes from. y = 3 means it starts at neuron 3 of the layer before.</p>
+        <p>Which neuron this edge comes from. y = 3 means it starts at neuron 3 of the layer before.</p>
       </div>
     </div>
   </div>
@@ -606,7 +606,7 @@ function showWeight(e,z,x,y,w){
     'W<sup><span class="fz">' + z + '</span></sup>' +
     '<sub><span class="fx">' + x + '</span><span class="fy">' + y + '</span></sub>' +
     ' = ' + w.toFixed(2) +
-    '</span>Connection from ' + fromLabel +
+    '</span>Edge from ' + fromLabel +
     ' to neuron ' + x +
     ' of layer ' + z + '.';
 
@@ -614,7 +614,7 @@ function showWeight(e,z,x,y,w){
     'W<sup><span class="fz">' + z + '</span></sup>' +
     '<sub><span class="fx">' + x + '</span><span class="fy">' + y + '</span></sub>' +
     ' = ' + w.toFixed(2);
-  document.getElementById('wpDesc').textContent = 'Connection from '+fromLabel+' to neuron '+x+' of layer '+z+'. '+(w>=0?'A positive weight — it pushes the receiving neuron up.':'A negative weight — it pulls the receiving neuron down.');
+  document.getElementById('wpDesc').textContent = 'Edge from '+fromLabel+' to neuron '+x+' of layer '+z+'. '+(w>=0?'A positive weight — it pushes the receiving neuron up.':'A negative weight — it pulls the receiving neuron down.');
 
   popupEl.style.left='-9999px'; popupEl.style.top='-9999px'; popupEl.classList.add('show');
   const rect=popupEl.getBoundingClientRect();
@@ -639,11 +639,11 @@ update();
 
 /* ---------------- quiz ---------------- */
 const quizPool=[
-  {z:2,x:1,y:3,text:'the connection from neuron 3 of layer 1 to neuron 1 of layer 2'},
-  {z:1,x:2,y:1,text:'the connection from input x₁ to neuron 2 of layer 1'},
-  {z:3,x:1,y:4,text:'the connection from neuron 4 of layer 2 to the single neuron of layer 3'},
-  {z:2,x:3,y:2,text:'the connection from neuron 2 of layer 1 to neuron 3 of layer 2'},
-  {z:1,x:3,y:3,text:'the connection from input x₃ to neuron 3 of layer 1'},
+  {z:2,x:1,y:3,text:'the edge from neuron 3 of layer 1 to neuron 1 of layer 2'},
+  {z:1,x:2,y:1,text:'the edge from input x₁ to neuron 2 of layer 1'},
+  {z:3,x:1,y:4,text:'the edge from neuron 4 of layer 2 to the single neuron of layer 3'},
+  {z:2,x:3,y:2,text:'the edge from neuron 2 of layer 1 to neuron 3 of layer 2'},
+  {z:1,x:3,y:3,text:'the edge from input x₃ to neuron 3 of layer 1'},
 ];
 let quizIdx=0, answered=false;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
